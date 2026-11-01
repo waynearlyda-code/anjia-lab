@@ -2,13 +2,15 @@
 
 **[▶ 在线打开](https://waynearlyda-code.github.io/anjia-lab/)**　手机、电脑都能用，单个 HTML 文件，离线也能跑。
 
+![开场：墙体从地里升起](docs/img/intro.gif)
+
 ![界面](docs/img/ui.jpg)
 
 | | |
 |:---:|:---:|
-| ![白天鸟瞰](docs/img/day.jpg) | ![夜景](docs/img/night.jpg) |
-| 白天鸟瞰：开场时墙体从地里升起 | 夜景：每个房间亮起暖光 |
-| ![漫游](docs/img/walk.jpg) | ![冬至日照](docs/img/sun.jpg) |
+| ![日出到入夜](docs/img/daylight.gif) | ![夜景](docs/img/night.jpg) |
+| 日照演示：日出到入夜，入夜自动亮灯 | 夜景：每个房间亮起暖光 |
+| ![漫游](docs/img/walk.gif) | ![冬至日照](docs/img/sun.jpg) |
 | 漫游：一只小黑足猫，能跳上沙发和床 | 冬至日照分析：每个房间晒几个小时 |
 | ![平面图](docs/img/plan.png) | ![轻奢风格](docs/img/luxe.jpg) |
 | 彩色平面图导出 | 一键换风格（图为轻奢） |
