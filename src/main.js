@@ -161,7 +161,7 @@ function refreshProps() {
       <div class="row"><label>旋转</label><input type="range" min="0" max="359" data-k="rot" value="${it.rot}"><b style="width:36px;text-align:right">${it.rot}°</b></div>
       ${it.type === 'counter' ? `<div class="row"><label>台面</label><select data-k="opt"><option value="">普通</option><option value="sink" ${it.opt === 'sink' ? 'selected' : ''}>水槽</option><option value="hob" ${it.opt === 'hob' ? 'selected' : ''}>灶台+烟机</option></select></div>` : ''}
       <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap"><button class="btn" data-act="rot90">⟳ 转 90°</button><button class="btn" data-act="dup">⧉ 复制</button><button class="btn red" data-act="del">删除</button></div>
-      <div style="margin-top:14px;font-size:12px;color:var(--sub)">${P2.itemDistances(it).map(d => `离墙 ${G.fmt(d.d)}`).join(' · ')}</div></div>`;
+      <div style="margin-top:14px;font-size:12px;color:var(--sub)">${P2.itemDistances(it).map(d => `离墙 ${G.fmt(Math.max(0, d.d))}`).join(' · ')}</div></div>`;
   } else if (s && s.room) {
     const r = S.rooms.find(x => x.id === s.room); if (!r) return; const a = G.area(r.poly) / 1e6;
     h = `<div class="sec"><h4>房间</h4><div class="row"><label>名称</label><input type="text" data-r="name" value="${esc(r.name)}"></div>

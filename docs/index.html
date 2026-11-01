@@ -767,7 +767,7 @@ function buildItem3D(it, M) {
     }
     case 'drums': {
       // 鼓手坐在 +z（正面），鼓朝 -z 摆开
-      const shell = M.mat('#b3262e', 0.25, 0.3), head = M.mat('#f3efe7', 0.6), chrome = M.mat('#d6d9de', 0.15, 1), brass = M.mat('#d9b55b', 0.25, 0.9), blk = M.mat('#1d1d20', 0.6);
+      const shell = M.mat('#b3262e', 0.25, 0.3), head = M.mat('#f3efe7', 0.6), chrome = M.mat('#d6d9de', 0.25, 0.45), brass = M.mat('#e3bd5c', 0.3, 0.4), blk = M.mat('#1d1d20', 0.6);
       const z0 = -d / 2;
       const kick = new THREE.Group(); kick.position.set(0, 0.29, z0 + 0.3); kick.rotation.x = Math.PI / 2; g.add(kick);
       { const m = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.28, 0.42, 32), shell); m.castShadow = true; kick.add(m); for (const sy of [-1, 1]) { const r = new THREE.Mesh(new THREE.CylinderGeometry(0.285, 0.285, 0.02, 32), sy > 0 ? head : chrome); r.position.y = sy * 0.21; kick.add(r); } }
@@ -2185,7 +2185,7 @@ function refreshProps() {
       <div class="row"><label>旋转</label><input type="range" min="0" max="359" data-k="rot" value="${it.rot}"><b style="width:36px;text-align:right">${it.rot}°</b></div>
       ${it.type === 'counter' ? `<div class="row"><label>台面</label><select data-k="opt"><option value="">普通</option><option value="sink" ${it.opt === 'sink' ? 'selected' : ''}>水槽</option><option value="hob" ${it.opt === 'hob' ? 'selected' : ''}>灶台+烟机</option></select></div>` : ''}
       <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap"><button class="btn" data-act="rot90">⟳ 转 90°</button><button class="btn" data-act="dup">⧉ 复制</button><button class="btn red" data-act="del">删除</button></div>
-      <div style="margin-top:14px;font-size:12px;color:var(--sub)">${P2.itemDistances(it).map(d => `离墙 ${G.fmt(d.d)}`).join(' · ')}</div></div>`;
+      <div style="margin-top:14px;font-size:12px;color:var(--sub)">${P2.itemDistances(it).map(d => `离墙 ${G.fmt(Math.max(0, d.d))}`).join(' · ')}</div></div>`;
   } else if (s && s.room) {
     const r = S.rooms.find(x => x.id === s.room); if (!r) return; const a = G.area(r.poly) / 1e6;
     h = `<div class="sec"><h4>房间</h4><div class="row"><label>名称</label><input type="text" data-r="name" value="${esc(r.name)}"></div>

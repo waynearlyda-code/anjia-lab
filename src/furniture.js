@@ -167,7 +167,7 @@ function buildItem3D(it, M) {
     }
     case 'drums': {
       // 鼓手坐在 +z（正面），鼓朝 -z 摆开
-      const shell = M.mat('#b3262e', 0.25, 0.3), head = M.mat('#f3efe7', 0.6), chrome = M.mat('#d6d9de', 0.15, 1), brass = M.mat('#d9b55b', 0.25, 0.9), blk = M.mat('#1d1d20', 0.6);
+      const shell = M.mat('#b3262e', 0.25, 0.3), head = M.mat('#f3efe7', 0.6), chrome = M.mat('#d6d9de', 0.25, 0.45), brass = M.mat('#e3bd5c', 0.3, 0.4), blk = M.mat('#1d1d20', 0.6);
       const z0 = -d / 2;
       const kick = new THREE.Group(); kick.position.set(0, 0.29, z0 + 0.3); kick.rotation.x = Math.PI / 2; g.add(kick);
       { const m = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.28, 0.42, 32), shell); m.castShadow = true; kick.add(m); for (const sy of [-1, 1]) { const r = new THREE.Mesh(new THREE.CylinderGeometry(0.285, 0.285, 0.02, 32), sy > 0 ? head : chrome); r.position.y = sy * 0.21; kick.add(r); } }
