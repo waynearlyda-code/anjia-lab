@@ -99,10 +99,11 @@ const V3 = (() => {
   function resize() {
     W = el.clientWidth || 1; H = el.clientHeight || 1;
     renderer.setSize(W, H, true); camera.aspect = W / H; camera.updateProjectionMatrix(); dirty = true;
+    if (!userMoved && st.mode === 'orbit' && st.introDone && W > 50) orbit.set({ dist: fitDist() });
   }
 
   // —— 构建场景 ——
-  let center = new THREE.Vector3(), radius = 10;
+  let center = new THREE.Vector3(), radius = 10, userMoved = false;
   function build(state, opts) {
     S = state; M.pal = STYLES[state.style] || STYLES.cream; M._c = {};
     for (const k in wallMats) delete wallMats[k];
@@ -350,12 +351,13 @@ const V3 = (() => {
           if (!ptrs.has(e.pointerId)) return; ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
           if (ptrs.size === 2 && pinch0) {
             const [a, b] = [...ptrs.values()]; const d = Math.hypot(a.x - b.x, a.y - b.y);
-            if (st.mode === 'orbit') goal.dist = Math.max(3, Math.min(120, pinch0.dist * pinch0.d / d));
+            if (st.mode === 'orbit') { goal.dist = Math.max(3, Math.min(120, pinch0.dist * pinch0.d / d)); userMoved = true; }
             const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2; panBy(mx - pinch0.mx, my - pinch0.my); pinch0.mx = mx; pinch0.my = my; return;
           }
           const dx = e.clientX - last.x, dy = e.clientY - last.y; last = { x: e.clientX, y: e.clientY };
           if (dragItem) { const p = floorPoint(e); if (p) { const it = S.items.find(i => i.id === dragItem.id); if (!dragItem.off) dragItem.off = [it.x - p[0], it.y - p[1]]; V3.onDragItem && V3.onDragItem(it, p[0] + dragItem.off[0], p[1] + dragItem.off[1]); } return; }
           if (st.mode === 'pano') { goal.theta -= dx * 0.005; goal.phi = Math.max(0.15, Math.min(2.95, goal.phi - dy * 0.005)); return; }
+          userMoved = true;
           if (downAt.btn === 2 || e.shiftKey) panBy(dx, dy);
           else { goal.theta -= dx * 0.006; goal.phi = Math.max(0.08, Math.min(1.5, goal.phi - dy * 0.006)); }
         });
@@ -367,7 +369,7 @@ const V3 = (() => {
         };
         dom.addEventListener('pointerup', up); dom.addEventListener('pointercancel', up);
         dom.addEventListener('contextmenu', e => e.preventDefault());
-        dom.addEventListener('wheel', e => { e.preventDefault(); if (st.mode === 'pano') { camera.fov = Math.max(35, Math.min(95, camera.fov + e.deltaY * 0.04)); camera.updateProjectionMatrix(); dirty = true; return; } goal.dist = Math.max(3, Math.min(120, goal.dist * Math.pow(1.0015, e.deltaY))); }, { passive: false });
+        dom.addEventListener('wheel', e => { e.preventDefault(); userMoved = true; if (st.mode === 'pano') { camera.fov = Math.max(35, Math.min(95, camera.fov + e.deltaY * 0.04)); camera.updateProjectionMatrix(); dirty = true; return; } goal.dist = Math.max(3, Math.min(120, goal.dist * Math.pow(1.0015, e.deltaY))); }, { passive: false });
       },
       update() {
         let moving = false;
@@ -606,7 +608,7 @@ const V3 = (() => {
     enterWalk, exitWalk, walk, interact, enterPano, exitPano, toggleGyro, panoImage, snapshot, applyOpen, animateOpen, crumble,
     redraw() { dirty = true; }, get camera() { return camera; }, get renderer() { return renderer; }, MOBILE, selected: null,
     tv(on) { st.tvOn = on; M.screen = on ? M.screenOn : M.screenOff; for (const g of itemObjs.values()) g.traverse(o => { if (o.material === M.screenOn || o.material === M.screenOff) o.material = M.screen; }); dirty = true; },
-    frame(view) { const v = { iso: { theta: 0.6, phi: 0.78 }, top: { theta: 0, phi: 0.05 }, front: { theta: 0, phi: 1.2 } }[view]; orbit.set(Object.assign({ dist: fitDist(), tx: 0, tz: 0 }, v)); }, fitDist,
+    frame(view) { const v = { iso: { theta: 0.6, phi: 0.78 }, top: { theta: 0, phi: 0.05 }, front: { theta: 0, phi: 1.2 } }[view]; userMoved = false; orbit.set(Object.assign({ dist: fitDist(), tx: 0, tz: 0 }, v)); }, fitDist,
   };
 })();
 

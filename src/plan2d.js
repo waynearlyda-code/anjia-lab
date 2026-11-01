@@ -13,10 +13,11 @@ const P2 = (() => {
   }
   function resize() {
     const r = cv.parentElement.getBoundingClientRect(); W = r.width || 1; H = r.height || 1; dpr = Math.min(devicePixelRatio, 2);
-    cv.width = W * dpr; cv.height = H * dpr; cv.style.width = W + 'px'; cv.style.height = H + 'px'; draw();
+    cv.width = W * dpr; cv.height = H * dpr; cv.style.width = W + 'px'; cv.style.height = H + 'px'; if (autoFit && S && W > 50 && H > 50) fit(); else draw();
   }
+  let autoFit = true;
   function fit() {
-    if (!S) return; const all = S.rooms.flatMap(r => r.poly).concat(S.walls.flatMap(w => [w.a, w.b])); const bb = G.bbox(all);
+    if (!S) return; autoFit = true; const all = S.rooms.flatMap(r => r.poly).concat(S.walls.flatMap(w => [w.a, w.b])); const bb = G.bbox(all);
     const pad = W < 600 ? 60 : 110; view.s = Math.min((W - pad * 2) / (bb.x1 - bb.x0), (H - pad * 2) / (bb.y1 - bb.y0));
     view.x = W / 2 - (bb.x0 + bb.x1) / 2 * view.s; view.y = H / 2 - (bb.y0 + bb.y1) / 2 * view.s; draw();
   }
@@ -243,10 +244,10 @@ const P2 = (() => {
     cv.addEventListener('pointermove', e => {
       const p = toW(e.offsetX, e.offsetY);
       if (ptrs.has(e.pointerId)) ptrs.set(e.pointerId, [e.offsetX, e.offsetY]);
-      if (pinch && ptrs.size === 2) { const [a, b] = [...ptrs.values()]; const d = Math.hypot(a[0] - b[0], a[1] - b[1]), m = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2]; zoomAt(pinch.m[0], pinch.m[1], pinch.s * d / pinch.d / view.s); view.x += m[0] - pinch.m[0]; view.y += m[1] - pinch.m[1]; pinch.m = m; draw(); return; }
+      if (pinch && ptrs.size === 2) { const [a, b] = [...ptrs.values()]; const d = Math.hypot(a[0] - b[0], a[1] - b[1]), m = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2]; autoFit = false; zoomAt(pinch.m[0], pinch.m[1], pinch.s * d / pinch.d / view.s); view.x += m[0] - pinch.m[0]; view.y += m[1] - pinch.m[1]; pinch.m = m; draw(); return; }
       if (down && Math.hypot(e.offsetX - down.sx, e.offsetY - down.sy) > 4) down.moved = true;
       if (drag && ptrs.size === 1 && down && down.moved) {
-        if (drag.pan) { view.x = drag.vx + e.offsetX - drag.sx; view.y = drag.vy + e.offsetY - drag.sy; draw(); return; }
+        if (drag.pan) { autoFit = false; view.x = drag.vx + e.offsetX - drag.sx; view.y = drag.vy + e.offsetY - drag.sy; draw(); return; }
         if (drag.item) { const it = drag.item; let nx = G.snap(p[0] + drag.off[0], 10), ny = G.snap(p[1] + drag.off[1], 10); [nx, ny] = snapToWall(it, nx, ny); it.x = nx; it.y = ny; cb.itemMoved && cb.itemMoved(it); draw(); return; }
         if (drag.rot) { const it = drag.rot; let a = Math.atan2(p[1] - it.y, p[0] - it.x) * 180 / Math.PI + 90; a = ((a % 360) + 360) % 360; const sn = Math.round(a / 90) * 90; if (Math.abs(a - sn) < 6) a = sn; it.rot = Math.round(a) % 360; cb.itemMoved && cb.itemMoved(it); draw(); return; }
         if (drag.note) { drag.note.x = p[0] + drag.off[0]; drag.note.y = p[1] + drag.off[1]; draw(); return; }
@@ -269,7 +270,7 @@ const P2 = (() => {
     cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', up);
     cv.addEventListener('contextmenu', e => { e.preventDefault(); if (st.draft) finishDraft(); });
     cv.addEventListener('dblclick', () => { if (st.draft) finishDraft(); });
-    cv.addEventListener('wheel', e => { e.preventDefault(); zoomAt(e.offsetX, e.offsetY, Math.pow(0.9985, e.deltaY)); draw(); }, { passive: false });
+    cv.addEventListener('wheel', e => { e.preventDefault(); autoFit = false; zoomAt(e.offsetX, e.offsetY, Math.pow(0.9985, e.deltaY)); draw(); }, { passive: false });
   }
   function zoomAt(sx, sy, k) { const ns = Math.max(0.008, Math.min(0.6, view.s * k)); k = ns / view.s; view.x = sx - (sx - view.x) * k; view.y = sy - (sy - view.y) * k; view.s = ns; }
   function snapToWall(it, x, y) {

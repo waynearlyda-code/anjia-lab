@@ -29,6 +29,12 @@ function restore(i) {
   hist.i = i; S = JSON.parse(hist.list[i]); P2.setState(S); P2.st.sel = null; V3.build(S); refreshProps();
   try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { }
 }
+// —— 存档位（最多 6 个，存在浏览器里）——
+const SLOT_KEY = 'anjia-lab-slots-v1', SLOT_MAX = 6;
+const slotsLoad = () => { try { return JSON.parse(localStorage.getItem(SLOT_KEY)) || []; } catch (e) { return []; } };
+function slotsSave(list) { try { localStorage.setItem(SLOT_KEY, JSON.stringify(list)); return true; } catch (e) { toast('浏览器存储空间满了，先删掉一个旧存档'); return false; } }
+function slotThumb() { try { return V3.snapshot(384, 216).replace(/^data:image\/jpeg/, 'data:image/jpeg'); } catch (e) { return ''; } }
+const fmtTime = t => { const d = new Date(t); return `${d.getMonth() + 1}月${d.getDate()}日 ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`; };
 const undo = () => { if (hist.i > 0) { restore(hist.i - 1); toast('已撤销'); } }, redo = () => { if (hist.i < hist.list.length - 1) { restore(hist.i + 1); toast('已重做'); } };
 let toastT; function toast(t) { const el = $('#toast'); el.textContent = t; el.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => el.classList.remove('show'), 2200); }
 
@@ -72,7 +78,7 @@ function renderTools() {
   if (MOB) {
     h += `<button data-a="lib"><em>🛋</em>家具</button>`;
     if (show2d) h += TOOLS.map(t => `<button data-t="${t[0]}" class="${P2.st.tool === t[0] ? 'on' : ''}"><em>${t[1]}</em>${t[2]}</button>`).join('');
-    h += `<button data-a="props"><em>⚙️</em>属性</button><button data-p="sun"><em>☀️</em>日照</button><button data-p="style"><em>🎨</em>风格</button><button data-p="smart"><em>🏠</em>中控</button><button data-p="shot"><em>📷</em>出图</button><button data-p="check"><em>✅</em>自查</button><button data-a="undo"><em>↶</em>撤销</button><button data-p="menu"><em>⋯</em>更多</button>`;
+    h += `<button data-a="props"><em>⚙️</em>属性</button><button data-p="sun"><em>☀️</em>日照</button><button data-p="style"><em>🎨</em>风格</button><button data-p="smart"><em>🏠</em>中控</button><button data-p="shot"><em>📷</em>出图</button><button data-p="save"><em>💾</em>存档</button><button data-a="undo"><em>↶</em>撤销</button><button data-a="redo"><em>↷</em>重做</button><button data-p="check"><em>✅</em>自查</button><button data-p="menu"><em>⋯</em>更多</button>`;
   } else {
     h += TOOLS.map(t => `<button data-t="${t[0]}" class="${P2.st.tool === t[0] ? 'on' : ''}">${t[1]} ${t[2]}</button>`).join('') + `<span class="sp"></span><span class="hint">${HINTS[P2.st.tool]}</span>`;
   }
@@ -81,7 +87,7 @@ function renderTools() {
 $('#tools').addEventListener('click', e => {
   const b = e.target.closest('button'); if (!b) return;
   if (b.dataset.t) { setTool(b.dataset.t); if (MOB && ['opening', 'finish', 'mep', 'pipes', 'wall'].includes(b.dataset.t)) openSheet('props'); }
-  if (b.dataset.a === 'lib') openSheet('lib'); if (b.dataset.a === 'props') openSheet('props'); if (b.dataset.a === 'undo') undo();
+  if (b.dataset.a === 'lib') openSheet('lib'); if (b.dataset.a === 'props') openSheet('props'); if (b.dataset.a === 'undo') undo(); if (b.dataset.a === 'redo') redo();
   if (b.dataset.p) openFloat(b.dataset.p);
 });
 function setTool(t) {
@@ -267,7 +273,7 @@ function openFloat(k) {
 $$('#top [data-p]').forEach(b => b.onclick = () => openFloat(b.dataset.p));
 $('#bUndo').onclick = undo; $('#bRedo').onclick = redo;
 const H = (t, ic) => `<h3>${ic} ${t}<button class="x" data-x>✕</button></h3>`;
-let sunRes = null, sunPlay = 0, patchOn = false;
+let sunRes = null, sunPlay = 0, patchOn = false, delAsk = null;
 function renderFloat() {
   const fp = $('#fp'), k = floatK; let h = '';
   if (k === 'sun') {
@@ -293,6 +299,13 @@ function renderFloat() {
       <div class="tog"><span>📺 电视</span><i class="sw2 ${V3.st.tvOn ? 'on' : ''}" data-sm="tv"></i></div>
       <div class="tog"><span>🚪 全部门</span><span><button class="btn" data-sm="dooron">全开</button> <button class="btn" data-sm="dooroff">全关</button></span></div>
       <p style="font-size:12px;color:var(--sub)">灯在白天也能开，但晚上看最有感觉：试试「观影」。</p>`;
+  } else if (k === 'save') {
+    const list = slotsLoad();
+    h = H('方案存档', '💾') + `<p style="font-size:12px;color:var(--sub);margin:-4px 0 8px">最多存 ${SLOT_MAX} 个方案，随时读回来对比。名字点一下就能改。</p>
+      <button class="btn pri full" data-slot-new ${list.length >= SLOT_MAX ? 'disabled style="opacity:.45"' : ''}>＋ 把当前方案存成新存档（${list.length}/${SLOT_MAX}）</button>
+      ${list.map((x, i) => `<div class="slot">${x.thumb ? `<img src="${x.thumb}">` : '<div class="ph"></div>'}<div class="meta"><input data-slotname="${x.id}" value="${esc(x.name)}" maxlength="16"><small>${fmtTime(x.time)} · ${STYLES[x.style]?.n || ''}</small>
+        <div class="ops"><button class="pri" data-slot-load="${x.id}">读取</button><button data-slot-over="${x.id}">覆盖</button><button class="red" data-slot-del="${x.id}">${delAsk === x.id ? '确定删？' : '删除'}</button></div></div></div>`).join('') || '<p class="empty">还没有存档。改出一个满意的样子，就点上面存起来。</p>'}
+      <div style="border-top:1px solid var(--line);margin-top:12px;padding-top:10px;font-size:12px;color:var(--sub);line-height:1.7">读取存档以后，按「撤销」能回到读取之前的样子。<br>想回到最开始：「⋯ 更多 → 恢复初始方案」。<br>存档存在这台手机/电脑的浏览器里，清缓存会清掉。</div>`;
   } else if (k === 'shot') {
     h = H('出图', '📷') + `<button class="style-card" data-shot="3d"><div style="font-size:26px">🖼</div><div><b>3D 效果图 · ${V3.MOBILE ? '1920×1080' : '2560×1440'}</b><small>按当前视角、当前时间的光照出一张高清图</small></div></button>
       <button class="style-card" data-shot="plan"><div style="font-size:26px">📐</div><div><b>彩色平面图</b><small>带尺寸、面积、家具的平面方案图</small></div></button>
@@ -315,6 +328,7 @@ function sunReport() {
     <p style="font-size:11.5px;color:var(--sub);line-height:1.6;margin-top:8px">按窗洞和墙体计算的直射阳光，没算楼间距、对面楼和所在楼层的遮挡。低楼层、楼间距小的话实际会更少，看房时最好冬天下午去现场确认。</p>
     <button class="btn full" data-sa="clearheat">清除热力图</button></div>`;
 }
+$('#fp').addEventListener('change', e => { const id = e.target.dataset && e.target.dataset.slotname; if (!id) return; const list = slotsLoad(), x = list.find(x => x.id === id); if (x) { x.name = e.target.value.trim() || x.name; slotsSave(list); toast('已改名'); } });
 $('#fp').addEventListener('input', e => {
   const id = e.target.id, ss = V3.sunState;
   if (id === 'sCity') V3.setSun({ city: SUN.cities[+e.target.value] });
@@ -335,8 +349,17 @@ function updatePatches() {
 }
 function stopSunPlay() { cancelAnimationFrame(sunPlay); sunPlay = 0; V3.st.sunPlay = false; }
 $('#fp').addEventListener('click', e => {
-  const b = e.target.closest('button,[data-sa],[data-light],[data-sm]'); if (!b) return;
+  const b = e.target.closest('button,[data-sa],[data-light],[data-sm]'); if (!b || b.disabled) return;
   if (b.dataset.x !== undefined) return closeFloat();
+  if (b.hasAttribute('data-slot-new')) {
+    const list = slotsLoad(); if (list.length >= SLOT_MAX) return toast(`最多 ${SLOT_MAX} 个，先删掉或覆盖一个`);
+    const used = new Set(list.map(x => x.name)); let n = list.length + 1; while (used.has('方案 ' + n)) n++;
+    list.push({ id: uid('s'), name: '方案 ' + n, time: Date.now(), style: S.style, thumb: slotThumb(), data: JSON.stringify(S) });
+    if (slotsSave(list)) { toast('已存为「方案 ' + n + '」'); renderFloat(); } return;
+  }
+  if (b.dataset.slotLoad) { const x = slotsLoad().find(x => x.id === b.dataset.slotLoad); if (!x) return; S = JSON.parse(x.data); P2.setState(S); P2.st.sel = null; commit('读取存档', true); P2.fit(); toast('已读取「' + x.name + '」，按撤销可以回去'); return; }
+  if (b.dataset.slotOver) { const list = slotsLoad(), x = list.find(x => x.id === b.dataset.slotOver); if (!x) return; Object.assign(x, { time: Date.now(), style: S.style, thumb: slotThumb(), data: JSON.stringify(S) }); if (slotsSave(list)) { toast('已用当前方案覆盖「' + x.name + '」'); renderFloat(); } return; }
+  if (b.dataset.slotDel) { const id = b.dataset.slotDel; if (delAsk !== id) { delAsk = id; renderFloat(); setTimeout(() => { if (delAsk === id) { delAsk = null; if (floatK === 'save') renderFloat(); } }, 3000); return; } delAsk = null; slotsSave(slotsLoad().filter(x => x.id !== id)); toast('存档已删除'); renderFloat(); return; }
   if (b.dataset.date) { const [m, d] = b.dataset.date.split(',').map(Number); V3.setSun({ m, d }); renderFloat(); updatePatches(); }
   const sa = b.dataset.sa;
   if (sa === 'auto') { V3.st.lightsAuto = !V3.st.lightsAuto; V3.updateLights(); renderFloat(); }
@@ -514,7 +537,7 @@ function intro() {
   const list = [['读取户型图', '1440 × 1080'], ['识别尺寸标注', '22 处'], ['提取墙体', wallsN + ' 段'], ['识别门窗', opsN + ' 处'], ['划分空间 · 面积自查', S.rooms.length + ' 间 ✓'], ['生成 3D 模型 · 布置家具', S.items.length + ' 件']];
   steps.innerHTML = list.map(([a, b]) => `<div><span>◆</span><b>${a}</b><em>${b}</em></div>`).join('');
   let done = false;
-  const finish = () => { if (done) return; done = true; box.classList.add('hide'); setTimeout(() => box.remove(), 900); V3.build(S, { intro: true }); setTimeout(() => toast(MOB ? '单指旋转 · 双指缩放 · 底部有更多功能' : '拖动旋转 · 滚轮缩放 · 点「漫游」进屋走走'), 2600); };
+  const finish = () => { if (done) return; done = true; box.classList.add('hide'); setTimeout(() => box.remove(), 900); V3.build(S, { intro: true }); setTimeout(() => P2.fit(), 50); setTimeout(() => toast(MOB ? '单指旋转 · 双指缩放 · 底部有更多功能' : '拖动旋转 · 滚轮缩放 · 点「漫游」进屋走走'), 2600); };
   $('#skip').onclick = finish;
   const ctx = cv.getContext('2d'); const t0 = performance.now();
   const drawWalls = k => {
